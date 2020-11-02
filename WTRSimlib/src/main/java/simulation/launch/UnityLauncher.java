@@ -8,7 +8,7 @@ import java.io.DataInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-class UnityLauncher implements InitializationProcess {
+class UnityLauncher implements Runnable {
     int port = 4512;
     String unityVersion = "2019.4.2f1";
     String unityProjectPath = "C:\\WTRSim\\WTRSimUnity";
@@ -28,21 +28,17 @@ class UnityLauncher implements InitializationProcess {
         this.unityProjectPath = unityProjectPath;
     }
 
-    @Override
-    public void initProcess() {
-        startUnityAndConnect();
-    }
-
-     /**
+    /**
      * Initializes socket connection and starts Unity
      */
-    private void startUnityAndConnect() {
+    @Override
+    public void run() {
         try {
             serverSocket = new ServerSocket(port);
 
             System.out.print("\n\n WAITING FOR CLIENT \n\n" );
             Thread socketAccept = new Thread(){public void run(){ try { socket = serverSocket.accept();
-                 System.out.print("\n\n CLIENT ACCEPTED \n\n" );} catch (IOException e) { System.out.println("Failed to connect to Unity client"); e.printStackTrace();} }};
+            System.out.print("\n\n CLIENT ACCEPTED \n\n" );} catch (IOException e) { System.out.println("Failed to connect to Unity client"); e.printStackTrace();} }};
 
             socketAccept.start();
             launchUnitySimulator(socketAccept);
@@ -59,7 +55,7 @@ class UnityLauncher implements InitializationProcess {
             } 
             catch (IOException e) {
                 e.printStackTrace();
-                }}});
+            }}});
 
         }
         catch (IOException e) {
@@ -68,6 +64,7 @@ class UnityLauncher implements InitializationProcess {
             SimSocket simsocket = new SimSocket(dataOutputStream, dataInputStream, socket, serverSocket, inputStream, outputStream);
             System.out.println("Starting communication!");
             simsocket.start(); //start IO
+
     }
 
     /**
@@ -99,5 +96,7 @@ class UnityLauncher implements InitializationProcess {
     private void verifyConnection() {
 
     }
+
+ 
 
 }

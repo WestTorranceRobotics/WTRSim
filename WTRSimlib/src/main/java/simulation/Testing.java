@@ -1,9 +1,9 @@
 package simulation;
 
-import simulation.launch.SimInit;
+import simulation.launch.SimStarter;
 
 public class Testing{
     public static void main(String [] args) {
-        new SimInit().start();
+        new SimStarter().start();
     }
 }

@@ -6,13 +6,13 @@ package simulation.launch;
  * If using a custom unity project path, pass the path as a string
  * ex: "new SimInit(stringPathName).start();""
  */
-public class SimInit extends Thread{
-    InitializationProcess launchUnity;
+public class SimStarter extends Thread{
+    Runnable launchUnity;
 
     /**
      * Default Constructor
      */
-    public SimInit () {
+    public SimStarter() {
         launchUnity = new UnityLauncher();
     } 
     
@@ -21,12 +21,12 @@ public class SimInit extends Thread{
      *  ex: "C:\\WTRSim\\WTRSimUnity"
      * @param unityProjectPath Must be path to Unity folder
      */
-    public SimInit(String unityProjectPath) {
+    public SimStarter(String unityProjectPath) {
         launchUnity = new UnityLauncher(unityProjectPath);
     }
 
     public void run() {
-        launchUnity.initProcess();
+        launchUnity.run();
     }
 
 }
