@@ -1,6 +1,6 @@
-package simulation;
+package simulation.launch;
 
-public class SimTable {}
+ class SimTable {}
 
 // package frc5124.robot2021;
 

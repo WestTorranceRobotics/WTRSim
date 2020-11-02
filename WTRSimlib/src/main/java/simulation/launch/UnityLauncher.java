@@ -1,61 +1,42 @@
-package simulation;
+package simulation.launch;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.CountDownLatch;
 import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-/**
- * Run SimInit as a thread to launch and intialize simulator.
- * 
- * If using a custom unity project path, pass the path as a string
- * ex: "new SimInit(stringPathName).start();""
- */
-public class SimInit extends Thread{
-    volatile boolean kill = false;
+class UnityLauncher implements InitializationProcess {
     int port = 4512;
     String unityVersion = "2019.4.2f1";
     String unityProjectPath = "C:\\WTRSim\\WTRSimUnity";
     String unityDefaultScenePath = "\\Assets\\DefaultScene.unity";
     InputStream inputStream;
     OutputStream outputStream;
-
-    /**
-     * Default Constructor
-     */
-    SimInit () {} 
-    
-    /**
-     *  Construct with custom project path.
-     *  ex: "C:\\WTRSim\\WTRSimUnity"
-     * @param unityProjectPath Must be path to Unity folder
-     */
-    SimInit(String unityProjectPath) {
-        this.unityProjectPath = unityProjectPath;
-    }
-
-    volatile Socket socket;
     ServerSocket serverSocket;
     DataInputStream dataInputStream;
     DataOutputStream dataOutputStream;
+    volatile Socket socket;
+    volatile boolean kill = false;
 
-    public void run() {
-        startSimulator();
+
+    UnityLauncher() {}
+
+    UnityLauncher(String unityProjectPath) {
+        this.unityProjectPath = unityProjectPath;
     }
 
-    private void startSimulator() {
-       initSocket();
-       verifyConnection();
+    @Override
+    public void initProcess() {
+        startUnityAndConnect();
     }
 
-    /**
-     * Initializes socket connection
+     /**
+     * Initializes socket connection and starts Unity
      */
-    private void initSocket() {
+    private void startUnityAndConnect() {
         try {
             serverSocket = new ServerSocket(port);
 
@@ -118,4 +99,5 @@ public class SimInit extends Thread{
     private void verifyConnection() {
 
     }
+
 }

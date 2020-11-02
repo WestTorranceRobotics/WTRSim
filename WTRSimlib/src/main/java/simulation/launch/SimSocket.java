@@ -1,4 +1,4 @@
-package simulation;
+package simulation.launch;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -90,15 +90,6 @@ class SimSocket extends Thread
 
            i++;
       }
-    }
-
-    void cueMessage(String message) {
-        try {
-        dataOutputStream.writeUTF(message);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
 }
