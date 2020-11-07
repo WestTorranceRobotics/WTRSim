@@ -61,9 +61,9 @@ class UnityLauncher implements Runnable {
         catch (IOException e) {
             e.printStackTrace();
         }
-            SimSocket simsocket = new SimSocket(dataOutputStream, dataInputStream, socket, serverSocket, inputStream, outputStream);
+            Runnable socketHandler = new SocketHandler(dataOutputStream, dataInputStream, socket, serverSocket, inputStream, outputStream);
             System.out.println("Starting communication!");
-            simsocket.start(); //start IO
+            socketHandler.run(); //start IO
 
     }
 

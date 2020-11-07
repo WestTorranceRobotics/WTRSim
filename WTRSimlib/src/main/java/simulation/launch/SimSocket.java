@@ -11,7 +11,7 @@ import java.io.DataInputStream;
 /**
  * Socket to Simulator
  */
-class SimSocket extends Thread 
+class SocketHandler implements Runnable 
 {
     int i = 0;
     public boolean echoRecieved = false;
@@ -25,7 +25,7 @@ class SimSocket extends Thread
 
     String temp = "hello unity";
 
-    SimSocket(DataOutputStream dataOutputStream, DataInputStream dataInputStream, Socket socket, ServerSocket serverSocket, InputStream inputStream, OutputStream outputStream) {
+    SocketHandler(DataOutputStream dataOutputStream, DataInputStream dataInputStream, Socket socket, ServerSocket serverSocket, InputStream inputStream, OutputStream outputStream) {
         this.dataOutputStream = dataOutputStream;
         this.dataInputStream = dataInputStream;
         this.socket = socket;
@@ -36,7 +36,7 @@ class SimSocket extends Thread
 
     public void run() 
     {
-        System.out.println("SimSocket Thread Started");
+        System.out.println("SocketHandler Thread Started");
         while (true) {
             try {
                 Thread.sleep(10);
