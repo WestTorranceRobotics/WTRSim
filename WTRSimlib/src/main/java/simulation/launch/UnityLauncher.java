@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,7 +12,7 @@ import java.io.OutputStream;
 class UnityLauncher implements Runnable {
     int port = 4512;
     String unityVersion = "2019.4.2f1";
-    String unityProjectPath = "C:\\WTRSim\\WTRSimUnity";
+    String unityProjectPath;
     String unityDefaultScenePath = "\\Assets\\DefaultScene.unity";
     InputStream inputStream;
     OutputStream outputStream;
@@ -22,7 +23,9 @@ class UnityLauncher implements Runnable {
     volatile boolean kill = false;
 
 
-    UnityLauncher() {}
+    UnityLauncher() {
+        this.unityProjectPath = System.getenv("userprofile") + File.separator + "Documents" + "\\WTRSim\\WTRSimUnity";
+    }
 
     UnityLauncher(String unityProjectPath) {
         this.unityProjectPath = unityProjectPath;
@@ -64,7 +67,6 @@ class UnityLauncher implements Runnable {
             SimSocket simsocket = new SimSocket(dataOutputStream, dataInputStream, socket, serverSocket, inputStream, outputStream);
             System.out.println("Starting communication!");
             simsocket.start(); //start IO
-
     }
 
     /**
@@ -73,7 +75,7 @@ class UnityLauncher implements Runnable {
      */
     private void launchUnitySimulator(Thread socketAccept) {
         try {
-            Process launchUnity = Runtime.getRuntime().exec("C:\\Program Files\\Unity\\Hub\\Editor\\" + 
+            Runtime.getRuntime().exec("C:\\Program Files\\Unity\\Hub\\Editor\\" + 
                 unityVersion + "\\Editor\\Unity.exe -projectPath " + unityProjectPath + " -openfile " + unityProjectPath + unityDefaultScenePath); // Launch unity
 
             Runtime.getRuntime().addShutdownHook(new Thread() { public void run(){ 
@@ -90,13 +92,5 @@ class UnityLauncher implements Runnable {
             catch (InterruptedException e) {
                 e.printStackTrace();
             }
-    }
-
-    // Send and recieve echo to verify connection to simulator
-    private void verifyConnection() {
-
-    }
-
- 
-
+    } 
 }
