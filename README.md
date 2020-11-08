@@ -7,3 +7,5 @@ Setup instructions:
 3. Compile WTRSimlib and add the jar for use in your robot project.
 4. When using your compiled WTRSimlib jar, you can start the simulator and pass your unity project path as follows:
 new SimInit(stringMyPath).start();
+
+Project path defaults to the user documents folder.
