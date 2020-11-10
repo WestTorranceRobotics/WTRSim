@@ -6,7 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Scanner;
+import simulation.launch.IOVerifier;
 
 // Credit to the University of Northampton, UK
 // http://www.eng.northampton.ac.uk/~espen/CSY2026/JavaServerCSClient.htm
@@ -17,7 +17,7 @@ import java.util.Scanner;
  */
 class SocketHandler implements Runnable {
 
-    Runnable connectionStarter;
+    Runnable ioVerifier;
 
     int clientPort = 4513;
     int serverPort = 4512;
@@ -54,11 +54,11 @@ class SocketHandler implements Runnable {
             e.printStackTrace();
         }
 
-        connectionStarter = new ConnectionStarter(sendSocket, receiveSocket, this);
+        ioVerifier = new IOVerifier(sendSocket, receiveSocket, this);
     }
 
     public void run() {
-        connectionStarter.run();
+        ioVerifier.run();
    
         //Outbound
         new Thread(() -> { while ( !kill ) {

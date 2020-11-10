@@ -6,7 +6,11 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 
-public class ConnectionStarter implements Runnable {
+/**
+ * IOVerifier is responsible for verifying that Input/Output with Unity is working, 
+ * and by extension confirms that Unity itself has launched and is sending/receiving packets.
+*/
+public class IOVerifier implements Runnable {
 
     int timeOutMili = 2000;
     int connectionTimeOutMili = 30000;
@@ -17,7 +21,7 @@ public class ConnectionStarter implements Runnable {
 
     public boolean kill = false;
 
-    ConnectionStarter(DatagramSocket sendSocket, DatagramSocket receiveSocket, SocketHandler socketHandler) {
+    IOVerifier(DatagramSocket sendSocket, DatagramSocket receiveSocket, SocketHandler socketHandler) {
         this.sendSocket = sendSocket;
         this.receiveSocket = receiveSocket;
         this.socketHandler = socketHandler;
