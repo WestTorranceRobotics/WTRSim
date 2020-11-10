@@ -1,30 +1,22 @@
 package simulation.launch;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 class UnityLauncher implements Runnable {
-    int port = 4512;
+
     String unityVersion = "2019.4.2f1";
     String unityProjectPath = "C:\\WTRSim\\WTRSimUnity";
     String unityDefaultScenePath = "\\Assets\\DefaultScene.unity";
-    InputStream inputStream;
-    OutputStream outputStream;
-    ServerSocket serverSocket;
-    DataInputStream dataInputStream;
-    DataOutputStream dataOutputStream;
-    volatile Socket socket;
-    volatile boolean kill = false;
+
+    Runnable socketHandler;
 
 
-    UnityLauncher() {}
+    UnityLauncher() {
+        socketHandler = new SocketHandler();
+    }
 
     UnityLauncher(String unityProjectPath) {
+        socketHandler = new SocketHandler();
         this.unityProjectPath = unityProjectPath;
     }
 
@@ -33,47 +25,18 @@ class UnityLauncher implements Runnable {
      */
     @Override
     public void run() {
-        try {
-            serverSocket = new ServerSocket(port);
-
-            System.out.print("\n\n WAITING FOR CLIENT \n\n" );
-            Thread socketAccept = new Thread(){public void run(){ try { socket = serverSocket.accept();
-            System.out.print("\n\n CLIENT ACCEPTED \n\n" );} catch (IOException e) { System.out.println("Failed to connect to Unity client"); e.printStackTrace();} }};
-
-            socketAccept.start();
-            launchUnitySimulator(socketAccept);
-            inputStream = socket.getInputStream();
-            outputStream = socket.getOutputStream();
-            dataInputStream = new DataInputStream(inputStream);
-            dataOutputStream = new DataOutputStream(outputStream);
-
-            Runtime.getRuntime().addShutdownHook(new Thread() { public void run(){ try { 
-                socket.close();
-                serverSocket.close(); 
-                dataInputStream.close();
-                dataOutputStream.close();
-            } 
-            catch (IOException e) {
-                e.printStackTrace();
-            }}});
-
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-            Runnable socketHandler = new SocketHandler(dataOutputStream, dataInputStream, socket, serverSocket, inputStream, outputStream);
-            System.out.println("Starting communication!");
-            socketHandler.run(); //start IO
-
+        System.out.println("Launching Unity Client");
+        launchUnitySimulator();
+        socketHandler.run(); 
     }
 
     /**
      * Launches unity simulator.
      * @param socketAccept The thread that attempts to accept unity client.
      */
-    private void launchUnitySimulator(Thread socketAccept) {
+    private void launchUnitySimulator() {
         try {
-            Process launchUnity = Runtime.getRuntime().exec("C:\\Program Files\\Unity\\Hub\\Editor\\" + 
+            Runtime.getRuntime().exec("C:\\Program Files\\Unity\\Hub\\Editor\\" + 
                 unityVersion + "\\Editor\\Unity.exe -projectPath " + unityProjectPath + " -openfile " + unityProjectPath + unityDefaultScenePath); // Launch unity
 
             Runtime.getRuntime().addShutdownHook(new Thread() { public void run(){ 
@@ -82,21 +45,6 @@ class UnityLauncher implements Runnable {
         catch (IOException e) {
             e.printStackTrace();
         }
-
-        try{
-            socketAccept.join();
-       
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        
     }
-
-    // Send and recieve echo to verify connection to simulator
-    private void verifyConnection() {
-
-    }
-
- 
-
 }

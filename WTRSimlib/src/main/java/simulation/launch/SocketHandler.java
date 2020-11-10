@@ -1,96 +1,112 @@
 package simulation.launch;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.Scanner;
 
 /**
- * Socket to Simulator
+ * Credit to the University of Northampton, UK
+ * http://www.eng.northampton.ac.uk/~espen/CSY2026/JavaServerCSClient.htm
+ * CSY2026 Modern Networks
  */
-class SocketHandler implements Runnable 
-{
-    int i = 0;
-    public boolean echoRecieved = false;
-    Socket socket;
-    ServerSocket serverSocket;
+class SocketHandler implements Runnable {
+    int clientPort = 4513;
+    int serverPort = 4512;
 
-    DataInputStream dataInputStream;
-    DataOutputStream dataOutputStream;
-    InputStream inputStream;
-    OutputStream outputStream;
+    DatagramSocket receiveSocket;
+    DatagramSocket sendSocket;
+    InetAddress address;
 
-    String temp = "hello unity";
+    public String outboundString = "hello Unity";
+    public String received;
 
-    SocketHandler(DataOutputStream dataOutputStream, DataInputStream dataInputStream, Socket socket, ServerSocket serverSocket, InputStream inputStream, OutputStream outputStream) {
-        this.dataOutputStream = dataOutputStream;
-        this.dataInputStream = dataInputStream;
-        this.socket = socket;
-        this.serverSocket = serverSocket;
-        this.inputStream = inputStream;
-        this.outputStream = outputStream;
-    }
+    volatile boolean kill = false;
+ 
+    public void run() {
+        try {
+            address = InetAddress.getByName("127.0.0.1");
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
 
-    public void run() 
-    {
-        System.out.println("SocketHandler Thread Started");
-        while (true) {
+        try {
+            sendSocket = new DatagramSocket();
+            receiveSocket = new DatagramSocket(serverPort);
+            Runtime.getRuntime().addShutdownHook(new Thread() { public void run(){ 
+               receiveSocket.close();
+               sendSocket.close(); } 
+             });
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Initiating WTRSim IO Threads");
+
+       
+        //Outbound
+        new Thread(() -> { while ( kill == false) {
+                try {
+                    Thread.sleep(10);
+                } 
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    byte[] buffer = new byte[256];
+                    buffer = outboundString.getBytes();
+                    DatagramPacket outboundDP = new DatagramPacket (buffer, buffer.length, address, clientPort);
+    
+                    sendSocket.send(outboundDP);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }}).start();
+
+            //Inbound
+        new Thread(() -> { while ( kill == false ) {
+                    
             try {
                 Thread.sleep(10);
             } 
             catch (InterruptedException e) {
                 e.printStackTrace();
-                return;
             }
 
-            //System.out.println("Attempting to flush output and read input");
             try {
-            //     System.out.println("Writing");
-            //     dataOutputStream.writeUTF("okDude");
-            //     System.out.println("Flushing");
-            //     dataOutputStream.flush();
-            //     System.out.println("Reading");
-            //     if (dataInputStream.available() > 0) {
-            //         String read = dataInputStream.readUTF();
-            //         System.out.println(read);
-            //     }
-            //     System.out.println("IO Cycle " + i + " complete!");
+                DatagramPacket inboundDP;
+                byte[] buffer = new byte[256];
+                inboundDP = new DatagramPacket (buffer, buffer.length);
+                receiveSocket.receive (inboundDP);
 
-             //In
-             byte[] lenBytes = new byte[4];
-             inputStream.read(lenBytes, 0, 4);
-             int len = (((lenBytes[3] & 0xff) << 24) | ((lenBytes[2] & 0xff) << 16) |
-                       ((lenBytes[1] & 0xff) << 8) | (lenBytes[0] & 0xff));
-             byte[] receivedBytes = new byte[len];
-             inputStream.read(receivedBytes, 0, len);
-             String received = new String(receivedBytes, 0, len);
-     
-             System.out.print("\n\nEcho: " + received + "\n\n");
-             
- 
-             // Out
-             String toSend = temp;
-             byte[] toSendBytes = toSend.getBytes();
-             int toSendLen = toSendBytes.length;
-             byte[] toSendLenBytes = new byte[4];
-             toSendLenBytes[0] = (byte)(toSendLen & 0xff);
-             toSendLenBytes[1] = (byte)((toSendLen >> 8) & 0xff);
-             toSendLenBytes[2] = (byte)((toSendLen >> 16) & 0xff);
-             toSendLenBytes[3] = (byte)((toSendLen >> 24) & 0xff);
-             outputStream.write(toSendLenBytes);
-             outputStream.write(toSendBytes);
-             
+                received = new String(inboundDP.getData());
+                System.out.println("packet received: " + received);
             } catch (IOException e) {
                 e.printStackTrace();
-                return;
             }
+        }}).start();           
 
-           i++;
-      }
+        Scanner scanner = new Scanner(System.in);
+        Runtime.getRuntime().addShutdownHook(new Thread() { public void run(){ 
+            scanner.close();
+        }});
+
+        checkKill(scanner);
     }
 
+    void checkKill(Scanner scanner) {
+        String input = scanner.nextLine();
+        if(input.equalsIgnoreCase("/")) {
+            kill = true;
+            scanner.close();
+        }
+        else {
+            checkKill(scanner);
+        }
+    }
 }
 
