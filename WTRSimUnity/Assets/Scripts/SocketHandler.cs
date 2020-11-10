@@ -11,11 +11,14 @@ using System.Linq;
 using System.Text;
 
 //Singleton needed on game object
+
+// Credit to the University of Northampton, UK
+// http://www.eng.northampton.ac.uk/~espen/CSY2026/JavaServerCSClient.htm
+// CSY2026 Modern Networks
+
 /**
-* Credit to the University of Northampton, UK
-* http://www.eng.northampton.ac.uk/~espen/CSY2026/JavaServerCSClient.htm
-* CSY2026 Modern Networks
-*/
+ * Class that handles communication with Java
+ */
 [InitializeOnLoad]
 public class SocketHandler: MonoBehaviour
 {

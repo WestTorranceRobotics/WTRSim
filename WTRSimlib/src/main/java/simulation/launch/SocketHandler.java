@@ -8,10 +8,12 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
+// Credit to the University of Northampton, UK
+// http://www.eng.northampton.ac.uk/~espen/CSY2026/JavaServerCSClient.htm
+// CSY2026 Modern Networks
+
 /**
- * Credit to the University of Northampton, UK
- * http://www.eng.northampton.ac.uk/~espen/CSY2026/JavaServerCSClient.htm
- * CSY2026 Modern Networks
+ * Class that handles communication with Unity
  */
 class SocketHandler implements Runnable {
     int clientPort = 4513;
