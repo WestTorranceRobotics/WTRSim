@@ -16,6 +16,13 @@ import java.util.Scanner;
  * Class that handles communication with Unity
  */
 class SocketHandler implements Runnable {
+
+    Runnable terminator;
+    Runnable connectionStarter;
+    Thread terminatorThread;
+
+    int timeOutMili = 2000;
+
     int clientPort = 4513;
     int serverPort = 4512;
 
@@ -27,8 +34,11 @@ class SocketHandler implements Runnable {
     public String received;
 
     volatile boolean kill = false;
- 
-    public void run() {
+    int lastHeartBeat = -1;
+    int heartBeat = 0;
+    Boolean heartStopped = false;
+
+    SocketHandler() {
         try {
             address = InetAddress.getByName("127.0.0.1");
         } catch (UnknownHostException e) {
@@ -38,19 +48,24 @@ class SocketHandler implements Runnable {
         try {
             sendSocket = new DatagramSocket();
             receiveSocket = new DatagramSocket(serverPort);
-            Runtime.getRuntime().addShutdownHook(new Thread() { public void run(){ 
-               receiveSocket.close();
-               sendSocket.close(); } 
-             });
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                public void run() {
+                    receiveSocket.close();
+                    sendSocket.close();
+                }
+            });
         } catch (SocketException e) {
             e.printStackTrace();
         }
 
-        System.out.println("Initiating WTRSim IO Threads");
+        connectionStarter = new ConnectionStarter(sendSocket, receiveSocket, this);
+    }
 
-       
+    public void run() {
+        connectionStarter.run();
+   
         //Outbound
-        new Thread(() -> { while ( kill == false) {
+        new Thread(() -> { while ( !kill ) {
                 try {
                     Thread.sleep(10);
                 } 
@@ -70,7 +85,7 @@ class SocketHandler implements Runnable {
             }}).start();
 
             //Inbound
-        new Thread(() -> { while ( kill == false ) {
+        new Thread(() -> { while ( !kill ) {
                     
             try {
                 Thread.sleep(10);
@@ -80,35 +95,25 @@ class SocketHandler implements Runnable {
             }
 
             try {
+                lastHeartBeat = heartBeat;
                 DatagramPacket inboundDP;
                 byte[] buffer = new byte[256];
                 inboundDP = new DatagramPacket (buffer, buffer.length);
                 receiveSocket.receive (inboundDP);
-
+                heartBeat++;
                 received = new String(inboundDP.getData());
                 System.out.println("packet received: " + received);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }}).start();           
 
-        Scanner scanner = new Scanner(System.in);
-        Runtime.getRuntime().addShutdownHook(new Thread() { public void run(){ 
-            scanner.close();
-        }});
+            if ( heartStopped ) { 
+                System.out.print("\nTimed out. Aborting... \n\n");
+                kill = true;
+            }
 
-        checkKill(scanner);
-    }
-
-    void checkKill(Scanner scanner) {
-        String input = scanner.nextLine();
-        if(input.equalsIgnoreCase("/")) {
-            kill = true;
-            scanner.close();
-        }
-        else {
-            checkKill(scanner);
-        }
+            heartBeat = (heartBeat >= 1000000) ? 0 : heartBeat;
+            heartStopped = (heartBeat == lastHeartBeat) ? true : heartStopped;
+        }}).start();         
     }
 }
-
