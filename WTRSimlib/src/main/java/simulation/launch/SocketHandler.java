@@ -17,11 +17,7 @@ import java.util.Scanner;
  */
 class SocketHandler implements Runnable {
 
-    Runnable terminator;
     Runnable connectionStarter;
-    Thread terminatorThread;
-
-    int timeOutMili = 2000;
 
     int clientPort = 4513;
     int serverPort = 4512;
