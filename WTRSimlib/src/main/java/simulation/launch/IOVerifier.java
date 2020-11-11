@@ -48,10 +48,10 @@ public class IOVerifier implements Runnable {
             receiveSocket.receive(inboundDP);
             System.out.println("Received! ");
 
-            System.out.println("Connection was a Success!");
+            System.out.println("Verified Input Output Efficacy");
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("\nConnection failed. Aborting... \n");
+            System.out.println("\nFailed. Aborting... \n");
             socketHandler.kill = true;
         }});
 
