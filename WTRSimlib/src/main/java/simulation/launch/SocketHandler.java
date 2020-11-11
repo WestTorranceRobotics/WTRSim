@@ -81,8 +81,7 @@ class SocketHandler implements Runnable {
             }}).start();
 
             //Inbound
-        new Thread(() -> { while ( !kill ) {
-                    
+        new Thread(() -> { while ( !kill ) { 
             try {
                 Thread.sleep(10);
             } 

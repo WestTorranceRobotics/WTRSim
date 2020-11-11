@@ -13,7 +13,7 @@ import java.net.SocketException;
 public class IOVerifier implements Runnable {
 
     int timeOutMili = 2000;
-    int connectionTimeOutMili = 30000;
+    int verifTimeOutMili = 60000;
     int clientPort = 4513;
     DatagramSocket sendSocket;
     DatagramSocket receiveSocket;
@@ -36,19 +36,19 @@ public class IOVerifier implements Runnable {
             byte[] buffer = new byte[1];
             DatagramPacket outboundDP = new DatagramPacket(buffer, buffer.length, address, clientPort);
 
-            System.out.print("Sending request... ");
+            System.out.print("Sending Request... ");
             sendSocket.send(outboundDP);
             System.out.println("Sent! ");
 
             System.out.print("Receiving Response... ");
-            receiveSocket.setSoTimeout(connectionTimeOutMili);
+            receiveSocket.setSoTimeout(verifTimeOutMili);
             DatagramPacket inboundDP;
             buffer = new byte[1];
             inboundDP = new DatagramPacket(buffer, buffer.length);
             receiveSocket.receive(inboundDP);
             System.out.println("Received! ");
 
-            System.out.println("Verified Input Output Efficacy");
+            System.out.println("Verified Input/Output Efficacy");
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("\nFailed. Aborting... \n");
