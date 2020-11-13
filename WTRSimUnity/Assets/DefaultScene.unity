@@ -307,7 +307,7 @@ GameObject:
   - component: {fileID: 1842803896}
   - component: {fileID: 1842803895}
   m_Layer: 0
-  m_Name: Socket Coroutine
+  m_Name: Socket Object
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -325,7 +325,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6a62fd76098a1241afe58d052ee104a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  temp: Hello!
 --- !u!4 &1842803896
 Transform:
   m_ObjectHideFlags: 0
