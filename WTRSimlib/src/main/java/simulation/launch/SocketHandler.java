@@ -5,7 +5,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import simulation.launch.UnityVerifier;
 
 // Credit to the University of Northampton, UK
@@ -15,15 +14,15 @@ import simulation.launch.UnityVerifier;
 /**
  * Class that handles communication with Unity.
  */
-class SocketHandler implements Runnable {
+class SocketHandler implements Runnable  {
 
     Runnable unityVerifier;
 
-    int clientPort = 4513;
-    int serverPort = 4512;
+    public int sendPort = 4513;
+    public int receivePort = 4512;
 
-    DatagramSocket receiveSocket;
-    DatagramSocket sendSocket;
+    public DatagramSocket receiveSocket;
+    public DatagramSocket sendSocket;
     InetAddress address;
 
     public String outboundString = "hello Unity";
@@ -35,26 +34,23 @@ class SocketHandler implements Runnable {
     Boolean heartStopped = false;
 
     SocketHandler() {
-        try {
-            address = InetAddress.getByName("127.0.0.1");
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+        address = InetAddress.getLoopbackAddress();
 
         try {
             sendSocket = new DatagramSocket();
-            receiveSocket = new DatagramSocket(serverPort);
+            receiveSocket = new DatagramSocket(receivePort);
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 public void run() {
                     receiveSocket.close();
                     sendSocket.close();
                 }
             });
-        } catch (SocketException e) {
+        } catch(SocketException e) {
             e.printStackTrace();
+            kill = true;
         }
 
-        unityVerifier = new UnityVerifier(sendSocket, receiveSocket, this);
+        unityVerifier = new UnityVerifier(this);
     }
 
     public void run() {
@@ -72,8 +68,12 @@ class SocketHandler implements Runnable {
                     byte[] buffer = new byte[256];
                     buffer = outboundString.getBytes();
                     DatagramPacket outboundDp = 
-                        new DatagramPacket(buffer, buffer.length, address, 
-                            clientPort);
+                        new DatagramPacket(
+                        buffer, 
+                        buffer.length, 
+                        address, 
+                        sendPort
+                    );
     
                     sendSocket.send(outboundDp);
 
@@ -88,7 +88,7 @@ class SocketHandler implements Runnable {
             while (!kill) { 
                 try {
                     Thread.sleep(10);
-                } catch (InterruptedException e) {
+                } catch(InterruptedException e) {
                     e.printStackTrace();
                 }
 
@@ -101,7 +101,7 @@ class SocketHandler implements Runnable {
                     heartBeat++;
                     received = new String(inboundDp.getData());
                     System.out.println("packet received: " + received);
-                } catch (IOException e) {
+                } catch(IOException e) {
                     e.printStackTrace();
                 }
 

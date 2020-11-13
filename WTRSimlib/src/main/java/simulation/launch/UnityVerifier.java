@@ -7,72 +7,69 @@ import java.net.InetAddress;
 import java.net.SocketException;
 
 /**
- * IoVerifier is responsible for verifying 
+ * UnityVerifier is responsible for verifying 
  * that Input/Output with Unity is working, 
  * and by extension confirms that Unity itself 
  * has launched and is sending/receiving packets.
 */
-public class UnityVerifier implements Runnable {
+class UnityVerifier implements Runnable {
 
     int timeOutMili = 2000;
-    int verifTimeOutMili = 60000;
-    int clientPort = 4513;
+    int verifTimeOutMili = 90000;
+    int sendPort;
     DatagramSocket sendSocket;
     DatagramSocket receiveSocket;
     SocketHandler socketHandler;
 
     public boolean kill = false;
 
-    UnityVerifier(DatagramSocket sendSocket, DatagramSocket 
-        receiveSocket, SocketHandler socketHandler) {
-        this.sendSocket = sendSocket;
-        this.receiveSocket = receiveSocket;
+    /**
+     * UnityVerifier verifies that Unity has launched properly.
+     *
+     * @param socketHandler is the class responsible 
+     *      for standard communication. 
+     */
+    UnityVerifier(SocketHandler socketHandler) {
         this.socketHandler = socketHandler;
+        this.sendSocket = socketHandler.sendSocket;
+        this.receiveSocket = socketHandler.receiveSocket;
+        this.sendPort = socketHandler.sendPort;
     }
 
     @Override
     public void run() {
-        Thread connect = new Thread(() -> {
-            try {
-                System.out.print("Establishing Connection... ");
-                InetAddress address = InetAddress.getByName("127.0.0.1");
-                byte[] buffer = new byte[1];
-                DatagramPacket outboundDp = new DatagramPacket(buffer, 
-                    buffer.length, address, clientPort);
-                System.out.print("Sending Request... ");
-                sendSocket.send(outboundDp);
-                System.out.println("Sent! ");
+        try {
+            System.out.println("Verifying Unity Launch... ");
+            InetAddress address = InetAddress.getLoopbackAddress();
+            byte[] buffer = new byte[1];
+            DatagramPacket outboundDp = new DatagramPacket(
+                buffer, buffer.length, 
+                address, sendPort
+            );
 
-                System.out.print("Receiving Response... ");
-                receiveSocket.setSoTimeout(verifTimeOutMili);
-                DatagramPacket inboundDp;
-                buffer = new byte[1];
-                inboundDp = new DatagramPacket(buffer, buffer.length);
-                receiveSocket.receive(inboundDp);
-                System.out.println("Received! ");
+            System.out.print("Sending Request... ");
+            sendSocket.send(outboundDp);
+            System.out.println("Sent! ");
 
-                System.out.println("Verified Input/Output Efficacy");
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.out.println("\nFailed. Aborting... \n");
-                socketHandler.kill = true;
-            }
-        });
+            System.out.print("Receiving Response... ");
+            receiveSocket.setSoTimeout(verifTimeOutMili);
+            DatagramPacket inboundDp;
+            buffer = new byte[1];
+            inboundDp = new DatagramPacket(buffer, buffer.length);
+            receiveSocket.receive(inboundDp);
+            System.out.println("Received! ");
 
-        connect.start();
-
-        while (connect.isAlive()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            System.out.println("Handshake Success!");
+        } catch(IOException e) {
+            e.printStackTrace();
+            System.out.println("\nFailed. Aborting... \n");
+            socketHandler.kill = true;
         }
 
         try {
             sendSocket.setSoTimeout(timeOutMili);
             receiveSocket.setSoTimeout(timeOutMili);
-        } catch (SocketException e) {
+        } catch(SocketException e) {
             e.printStackTrace();
         }
     }

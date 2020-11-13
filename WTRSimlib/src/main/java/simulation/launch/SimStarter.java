@@ -22,11 +22,19 @@ public class SimStarter extends Thread {
      * Default Constructor.
      */
     public SimStarter() {
-        this.unityProjectPath = System.getenv("userprofile") + File.separator 
-            + "Documents" + File.separator + "WTRSim" + File.separator 
-            + "WTRSimUnity";
-        launchUnity = new UnityLauncher(unityVersion, 
-            unityProjectPath, unityDefaultScenePath);
+        this.unityProjectPath = 
+            System.getenv("userprofile") + File.separator 
+            + "Documents" + File.separator 
+            + "WTRSim" + File.separator 
+            + "WTRSimUnity"
+        ;
+
+        launchUnity = new UnityLauncher(
+            unityVersion, 
+            unityProjectPath, 
+            unityDefaultScenePath
+        );
+
         socketHandler = new SocketHandler();
     } 
     
@@ -38,8 +46,12 @@ public class SimStarter extends Thread {
      */
     public SimStarter(String unityProjectPath) {
         this.unityProjectPath = unityProjectPath;
-        launchUnity = new UnityLauncher(unityVersion, unityProjectPath, 
-            unityDefaultScenePath);
+        launchUnity = new UnityLauncher(
+            unityVersion, 
+            unityProjectPath, 
+            unityDefaultScenePath
+        );
+
         socketHandler = new SocketHandler();
     }
 

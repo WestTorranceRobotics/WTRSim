@@ -8,8 +8,11 @@ class UnityLauncher implements Runnable {
     String unityProjectPath;
     String unityDefaultScenePath;
 
-    UnityLauncher(String unityVersion, String unityProjectPath, 
-        String unityDefaultScenePath) {
+    UnityLauncher(
+        String unityVersion, 
+        String unityProjectPath, 
+        String unityDefaultScenePath
+    ) {
             
         this.unityVersion = unityVersion;
         this.unityProjectPath = unityProjectPath;
@@ -29,12 +32,12 @@ class UnityLauncher implements Runnable {
                 public void run() { 
                     try { 
                         Runtime.getRuntime().exec("Taskkill /IM Unity.exe /F"); 
-                    } catch (IOException e) { 
+                    } catch(IOException e) { 
                         e.printStackTrace();
                     }
                 }
             });
-        } catch (IOException e) {
+        } catch(IOException e) {
             e.printStackTrace();
         }
     }
