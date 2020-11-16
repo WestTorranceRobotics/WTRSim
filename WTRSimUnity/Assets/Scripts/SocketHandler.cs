@@ -41,8 +41,11 @@ public class SocketHandler: MonoBehaviour
 
     SocketHandler()
     {
-       
-        sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+		
+    }
+	
+	void Start() {
+		sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         receiveSocket = new UdpClient(clientPort);
         clientEP = new IPEndPoint(IPAddress.Any, clientPort);
 
@@ -121,7 +124,7 @@ public class SocketHandler: MonoBehaviour
             }).Start();
         }
         EditorApplication.update += Update;
-    }
+	}
 
     private void Update()
     {
@@ -143,5 +146,3 @@ public class SocketHandler: MonoBehaviour
         EditorApplication.Exit(0);
     }
 }
-
-
