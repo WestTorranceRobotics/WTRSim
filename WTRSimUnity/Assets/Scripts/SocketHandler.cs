@@ -19,7 +19,7 @@ using System.Text;
 /**
  * Class that handles communication with Java
  */
-[InitializeOnLoad]
+
 public class SocketHandler: MonoBehaviour
 {
     int clientPort = 4513;
