@@ -19,7 +19,7 @@ using System.Text;
 /**
  * Class that handles communication with Java
  */
-
+[InitializeOnLoad]
 public class SocketHandler: MonoBehaviour
 {
     int clientPort = 4513;
@@ -33,6 +33,7 @@ public class SocketHandler: MonoBehaviour
     IPEndPoint clientEP;
 
     Boolean dependentMode; //If dependentMode is true, Unity is running dependently to WTRSimlib
+	Boolean firstPlaymode = false;
     volatile Boolean kill = false;
 
     int lastHeartBeat = -1;
@@ -41,10 +42,6 @@ public class SocketHandler: MonoBehaviour
 
     SocketHandler()
     {
-		
-    }
-	
-	void Start() {
 		sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         receiveSocket = new UdpClient(clientPort);
         clientEP = new IPEndPoint(IPAddress.Any, clientPort);
@@ -124,10 +121,15 @@ public class SocketHandler: MonoBehaviour
             }).Start();
         }
         EditorApplication.update += Update;
-	}
-
+    }
+	
     private void Update()
     {
+        if (dependentMode && !firstPlaymode) {
+			EditorApplication.EnterPlaymode();
+			firstPlaymode = true;
+		}
+		
         if ( kill )
         {
             killProcesses();
