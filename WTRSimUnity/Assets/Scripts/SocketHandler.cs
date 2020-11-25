@@ -33,8 +33,9 @@ public class SocketHandler: MonoBehaviour
     IPEndPoint clientEP;
 
     Boolean dependentMode; //If dependentMode is true, Unity is running dependently to WTRSimlib
-	Boolean firstPlaymode = false;
     volatile Boolean kill = false;
+	
+	Boolean initialized = false;
 
     int lastHeartBeat = -1;
     int heartBeat = 0;
@@ -42,12 +43,13 @@ public class SocketHandler: MonoBehaviour
 
     SocketHandler()
     {
-		sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+       
+        sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         receiveSocket = new UdpClient(clientPort);
         clientEP = new IPEndPoint(IPAddress.Any, clientPort);
 
-        sendSocket.SendTimeout = 2000;
-        receiveSocket.Client.ReceiveTimeout = 2000;
+        sendSocket.SendTimeout = 9000;
+        receiveSocket.Client.ReceiveTimeout = 9000;
 
         try
         {
@@ -62,16 +64,21 @@ public class SocketHandler: MonoBehaviour
 
             Debug.Log("Connected!");
             dependentMode = true;
+			EditorApplication.playModeStateChanged += playModeChanged;
         }
         catch ( SocketException e )
         {
             dependentMode = false;
         }
-     
-
-        if ( dependentMode )
-        {
-            //Inbound
+		
+        EditorApplication.update += Update;
+    }
+	
+	private void playModeChanged(PlayModeStateChange state) {
+		
+		if (EditorApplication.isPlaying) {
+			kill = false;
+	    //Inbound
             new Thread(() =>
             {
                 while ( !kill )
@@ -119,15 +126,18 @@ public class SocketHandler: MonoBehaviour
 
                 }
             }).Start();
-        }
-        EditorApplication.update += Update;
-    }
-	
+		}
+		else {
+			kill = true;
+		}
+
+	}
+
     private void Update()
     {
-        if (dependentMode && !firstPlaymode) {
+		if (!initialized && dependentMode) {
 			EditorApplication.EnterPlaymode();
-			firstPlaymode = true;
+			initialized = true;
 		}
 		
         if ( kill )
@@ -142,9 +152,11 @@ public class SocketHandler: MonoBehaviour
             kill = true;
         };
 
-        EditorApplication.Exit(0);
+        //EditorApplication.Exit(0);
         receiveSocket.Close();
         sendSocket.Close();
-        EditorApplication.Exit(0);
+        //EditorApplication.Exit(0);
     }
 }
+
+
