@@ -69,6 +69,7 @@ public class SocketHandler: MonoBehaviour
         catch ( SocketException e )
         {
             dependentMode = false;
+			kill = true;
         }
 		
         EditorApplication.update += Update;
