@@ -147,6 +147,10 @@ public class SocketHandler: MonoBehaviour
         }
     }
 
+    void OnApplicationQuit() {
+        killProcesses();
+    }
+
     void killProcesses() {
         AppDomain.CurrentDomain.ProcessExit += (obj, eArg) =>
         {
