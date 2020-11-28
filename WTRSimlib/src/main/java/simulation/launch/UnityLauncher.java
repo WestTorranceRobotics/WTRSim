@@ -13,7 +13,6 @@ class UnityLauncher implements Runnable {
         String unityProjectPath, 
         String unityDefaultScenePath
     ) {
-            
         this.unityVersion = unityVersion;
         this.unityProjectPath = unityProjectPath;
         this.unityDefaultScenePath = unityDefaultScenePath;
