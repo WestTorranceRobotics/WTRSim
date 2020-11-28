@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 
 /**
  * UnityVerifier is responsible for verifying 
@@ -13,9 +12,8 @@ import java.net.SocketException;
  * has launched and is sending/receiving packets.
 */
 class UnityVerifier implements Runnable {
-
-    int timeOutMili = 2000;
-    int verifTimeOutMili = 90000;
+    
+    int verifTimeOutMili = 100000;
     int sendPort;
     DatagramSocket sendSocket;
     DatagramSocket receiveSocket;
@@ -64,13 +62,6 @@ class UnityVerifier implements Runnable {
             e.printStackTrace();
             System.out.println("\nFailed. Aborting... \n");
             socketHandler.kill = true;
-        }
-
-        try {
-            sendSocket.setSoTimeout(timeOutMili);
-            receiveSocket.setSoTimeout(timeOutMili);
-        } catch(SocketException e) {
-            e.printStackTrace();
         }
     }
 }

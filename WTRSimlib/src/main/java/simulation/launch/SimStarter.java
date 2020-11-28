@@ -11,8 +11,7 @@ import java.io.File;
 public class SimStarter extends Thread {
     String unityVersion = "2019.4.2f1";
     String unityProjectPath;
-    String unityDefaultScenePath = File.separator 
-        + "Assets" + File.separator + "DefaultScene.unity";
+    String unityDefaultScenePath;
 
     Runnable socketHandler;
     Runnable launchUnity;
@@ -23,11 +22,14 @@ public class SimStarter extends Thread {
      */
     public SimStarter() {
         this.unityProjectPath = 
-            System.getenv("userprofile") + File.separator 
-            + "Documents" + File.separator 
-            + "WTRSim" + File.separator 
-            + "WTRSimUnity"
+            System.getenv("userprofile") + File.separator + 
+            "Documents" + File.separator + 
+            "WTRSim" + File.separator + 
+            "WTRSimUnity"
         ;
+
+        this.unityDefaultScenePath = File.separator + 
+            "Assets" + File.separator + "DefaultScene.unity";
 
         launchUnity = new UnityLauncher(
             unityVersion, 

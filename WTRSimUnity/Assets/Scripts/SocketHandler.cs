@@ -34,6 +34,8 @@ public class SocketHandler: MonoBehaviour
 
     Boolean dependentMode; //If dependentMode is true, Unity is running dependently to WTRSimlib
     volatile Boolean kill = false;
+	
+	Boolean initialized = false;
 
     int lastHeartBeat = -1;
     int heartBeat = 0;
@@ -46,8 +48,8 @@ public class SocketHandler: MonoBehaviour
         receiveSocket = new UdpClient(clientPort);
         clientEP = new IPEndPoint(IPAddress.Any, clientPort);
 
-        sendSocket.SendTimeout = 2000;
-        receiveSocket.Client.ReceiveTimeout = 2000;
+        sendSocket.SendTimeout = 9000;
+        receiveSocket.Client.ReceiveTimeout = 9000;
 
         try
         {
@@ -62,16 +64,22 @@ public class SocketHandler: MonoBehaviour
 
             Debug.Log("Connected!");
             dependentMode = true;
+			EditorApplication.playModeStateChanged += playModeChanged;
         }
         catch ( SocketException e )
         {
             dependentMode = false;
+			kill = true;
         }
-     
-
-        if ( dependentMode )
-        {
-            //Inbound
+		
+        EditorApplication.update += Update;
+    }
+	
+	private void playModeChanged(PlayModeStateChange state) {
+		
+		if (EditorApplication.isPlaying) {
+			kill = false;
+	    //Inbound
             new Thread(() =>
             {
                 while ( !kill )
@@ -119,16 +127,28 @@ public class SocketHandler: MonoBehaviour
 
                 }
             }).Start();
-        }
-        EditorApplication.update += Update;
-    }
+		}
+		else {
+			kill = true;
+		}
+
+	}
 
     private void Update()
     {
+		if (!initialized && dependentMode) {
+			EditorApplication.EnterPlaymode();
+			initialized = true;
+		}
+		
         if ( kill )
         {
             killProcesses();
         }
+    }
+
+    void OnApplicationQuit() {
+        killProcesses();
     }
 
     void killProcesses() {
@@ -137,10 +157,10 @@ public class SocketHandler: MonoBehaviour
             kill = true;
         };
 
-        EditorApplication.Exit(0);
+        //EditorApplication.Exit(0);
         receiveSocket.Close();
         sendSocket.Close();
-        EditorApplication.Exit(0);
+        //EditorApplication.Exit(0);
     }
 }
 

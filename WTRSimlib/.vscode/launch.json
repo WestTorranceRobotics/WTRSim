@@ -6,6 +6,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "CodeLens (Launch) - TestRunner",
+      "request": "launch",
+      "mainClass": "simulation.testing.TestRunner",
+      "projectName": "WTRSimlib"
+    },
+    {
+      "type": "java",
       "name": "CodeLens (Launch) - Testing",
       "request": "launch",
       "mainClass": "simulation.Testing",
