@@ -11,7 +11,7 @@ import java.net.InetAddress;
  * and by extension confirms that Unity itself 
  * has launched and is sending/receiving packets.
 */
-class UnityVerifier implements Runnable {
+public class UnityVerifier implements Runnable {
     
     int verifTimeOutMili = 100000;
     int sendPort;

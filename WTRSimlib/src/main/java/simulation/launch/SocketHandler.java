@@ -14,7 +14,7 @@ import simulation.launch.UnityVerifier;
 /**
  * Class that handles communication with Unity.
  */
-class SocketHandler implements Runnable  {
+public class SocketHandler implements Runnable  {
 
     Runnable unityVerifier;
 
@@ -25,13 +25,13 @@ class SocketHandler implements Runnable  {
     public DatagramSocket sendSocket;
     InetAddress address;
 
-    public String outboundString = "hello Unity";
-    public String received;
+    public volatile String outboundString = "";
+    public volatile String inboundString = "";
 
     volatile boolean kill = false;
     int timeOutMili = 10000;
 
-    SocketHandler() {
+    public SocketHandler() {
         address = InetAddress.getLoopbackAddress();
 
         try {
@@ -96,12 +96,38 @@ class SocketHandler implements Runnable  {
                     byte[] buffer = new byte[256];
                     inboundDp = new DatagramPacket(buffer, buffer.length);
                     receiveSocket.receive(inboundDp);
-                    received = new String(inboundDp.getData());
-                    System.out.println("packet received: " + received);
+                    setInboundString(new String(inboundDp.getData()));
+                    System.out.println("packet received: " + 
+                        getLatestInboundString());
                 } catch(IOException e) {
                     e.printStackTrace();
                 }
             }
-        }).start();         
+        }).start();      
     }
+
+    public synchronized void setInboundString(String string) {
+        synchronized (inboundString) {
+            inboundString = string;
+        }
+    }
+
+    public synchronized String getLatestInboundString() {
+        synchronized (inboundString) {
+            return inboundString;
+        }
+    }
+
+    public synchronized void setOutboundString(String string) {
+        synchronized (outboundString) {
+            outboundString = string;
+        }
+    }
+
+    public synchronized String getLatestOutboundString() {
+        synchronized (outboundString) {
+            return outboundString;
+        }
+    }
+    
 }

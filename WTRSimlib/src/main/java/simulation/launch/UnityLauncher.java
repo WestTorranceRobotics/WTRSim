@@ -2,7 +2,7 @@ package simulation.launch;
 
 import java.io.IOException;
 
-class UnityLauncher implements Runnable {
+public class UnityLauncher implements Runnable {
 
     String unityVersion;
     String unityProjectPath;
