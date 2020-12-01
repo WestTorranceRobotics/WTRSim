@@ -5,8 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -14,18 +12,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.DoubleFunction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import simulation.launch.*;
 
+/**
+ * Todo
+ */
 public class ConcurrentSafetyTests {
-    SocketHandler socketHandler;
+    SocketManager socketManager;
 
     public ConcurrentSafetyTests() throws IOException {
-        socketHandler = new SocketHandler();
+        socketManager = new SocketManager();
     }
 
     String getRandomString() {
@@ -42,28 +39,32 @@ public class ConcurrentSafetyTests {
 
     Runnable readOutbound = new Thread(() -> {
         for (int i = 0; i < 1000; i++) {
-            socketHandler.getLatestOutboundString();
+            String j = socketManager.outboundString;
         }
     });
     
     Runnable writeOutbound = new Thread(() -> {
         for (int i = 0; i < 1000; i++) {
-            socketHandler.setOutboundString(getRandomString());
+            socketManager.setOutboundString(getRandomString());
         }
     });
 
     Runnable readInbound = new Thread(() -> {
         for (int i = 0; i < 1000; i++) {
-            socketHandler.getLatestInboundString();
+            String j = socketManager.inboundString;
         }
     });
 
     Runnable writeInbound = new Thread(() -> {
         for (int i = 0; i < 1000; i++) {
-            socketHandler.setInboundString(getRandomString());
+            socketManager.setInboundString(getRandomString());
         }
     });
 
+    /**
+     * Test to ensure threads run concurrently. 
+     * @throws InterruptedException
+     */
     @Test
     public void read_and_write_concurrent() throws InterruptedException {
         List<Runnable> runnables = new ArrayList<Runnable>();
@@ -77,6 +78,10 @@ public class ConcurrentSafetyTests {
         assertConcurrent("read_and_wrte_concurrent: ", runnables, 10);
     }
 
+    /**
+     * Test to check for reading a stale string.
+     * @throws InterruptedException
+     */
     @Test
     public void write_equals() throws InterruptedException { 
         for (int i = 0; i < 500; i++) { 
@@ -87,8 +92,8 @@ public class ConcurrentSafetyTests {
                     String instanceString = randomString;
                     for (int k = 0; k < 100; k++) {
                     
-                        socketHandler.setOutboundString(instanceString);
-                        assertEquals("write_outbound_equals: ", instanceString, socketHandler.getLatestOutboundString());
+                        socketManager.setOutboundString(instanceString);
+                        assertEquals("write_outbound_equals: ", instanceString, socketManager.outboundString);
                 
                     }
                 }).start();
@@ -103,8 +108,8 @@ public class ConcurrentSafetyTests {
                     String instanceString = randomString;
                     for (int k = 0; k < 100; k++) {
                     
-                        socketHandler.setInboundString(instanceString);
-                        assertEquals("write_outbound_equals: ", instanceString, socketHandler.getLatestInboundString());
+                        socketManager.setInboundString(instanceString);
+                        assertEquals("write_outbound_equals: ", instanceString, socketManager.inboundString);
                 
                     }
                 }).start();
@@ -112,6 +117,9 @@ public class ConcurrentSafetyTests {
         }
     }
     
+    /**
+     * Method from junit-4 documentation
+     */
     public static void assertConcurrent(final String message, final List<? extends Runnable> runnables, final int maxTimeoutSeconds) throws InterruptedException {
         final int numThreads = runnables.size();
         final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());

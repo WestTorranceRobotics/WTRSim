@@ -14,9 +14,11 @@ import simulation.launch.UnityVerifier;
 /**
  * Class that handles communication with Unity.
  */
-public class SocketHandler implements Runnable  {
+public class SocketManager implements Runnable  {
 
     Runnable unityVerifier;
+
+    int soTimeout = 2000;
 
     public int sendPort = 4513;
     public int receivePort = 4512;
@@ -29,9 +31,12 @@ public class SocketHandler implements Runnable  {
     public volatile String inboundString = "";
 
     volatile boolean kill = false;
-    int timeOutMili = 10000;
 
-    public SocketHandler() {
+    int lastHeartBeat = -1;
+    int heartBeat = 0;
+    Boolean heartStopped = false;
+
+    public SocketManager(){
         address = InetAddress.getLoopbackAddress();
 
         try {
@@ -48,18 +53,23 @@ public class SocketHandler implements Runnable  {
             kill = true;
         }
 
-        unityVerifier = new UnityVerifier(this);
+        unityVerifier = new UnityVerifier(sendSocket, receiveSocket, sendPort);
     }
 
     public void run() {
-        unityVerifier.run();
-
+        unityVerifier.run();  
   
         //Outbound
         new Thread(() -> { 
+            try {
+                sendSocket.setSoTimeout(soTimeout);
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+            
             while (!kill) {
                 try {
-                    Thread.sleep(20);
+                    Thread.sleep(30);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -84,24 +94,40 @@ public class SocketHandler implements Runnable  {
 
         //Inbound
         new Thread(() -> { 
+            try {
+                receiveSocket.setSoTimeout(soTimeout);
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+
             while (!kill) { 
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(5);
                 } catch(InterruptedException e) {
                     e.printStackTrace();
                 }
 
                 try {
+                    lastHeartBeat = heartBeat;
                     DatagramPacket inboundDp;
                     byte[] buffer = new byte[256];
                     inboundDp = new DatagramPacket(buffer, buffer.length);
                     receiveSocket.receive(inboundDp);
                     setInboundString(new String(inboundDp.getData()));
+                    heartBeat++;
                     System.out.println("packet received: " + 
-                        getLatestInboundString());
+                        inboundString);
                 } catch(IOException e) {
                     e.printStackTrace();
+                    if ( heartStopped )
+                        {
+                            System.out.println("Timed out. Aborting... ");
+                            kill = true;
+                        }
                 }
+
+                heartBeat = (heartBeat >= 1000000) ? 0 : heartBeat;
+                heartStopped = (heartBeat == lastHeartBeat) ? true : heartStopped;
             }
         }).start();      
     }
@@ -112,22 +138,9 @@ public class SocketHandler implements Runnable  {
         }
     }
 
-    public synchronized String getLatestInboundString() {
-        synchronized (inboundString) {
-            return inboundString;
-        }
-    }
-
     public synchronized void setOutboundString(String string) {
         synchronized (outboundString) {
             outboundString = string;
         }
     }
-
-    public synchronized String getLatestOutboundString() {
-        synchronized (outboundString) {
-            return outboundString;
-        }
-    }
-    
 }

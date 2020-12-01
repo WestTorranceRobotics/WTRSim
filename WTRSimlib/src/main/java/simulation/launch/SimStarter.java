@@ -13,7 +13,7 @@ public class SimStarter extends Thread {
     String unityProjectPath;
     String unityDefaultScenePath;
 
-    Runnable socketHandler;
+    Runnable socketManager;
     Runnable launchUnity;
     
 
@@ -29,7 +29,7 @@ public class SimStarter extends Thread {
         ;
 
         this.unityDefaultScenePath = File.separator + 
-            "Assets" + File.separator + "DefaultScene.unity";
+            "Assets" + File.separator + "Scenes" + File.separator + "DefaultScene.unity";
 
         launchUnity = new UnityLauncher(
             unityVersion, 
@@ -37,7 +37,7 @@ public class SimStarter extends Thread {
             unityDefaultScenePath
         );
 
-        socketHandler = new SocketHandler();
+        socketManager = new SocketManager();
     } 
     
     /**
@@ -54,11 +54,11 @@ public class SimStarter extends Thread {
             unityDefaultScenePath
         );
 
-        socketHandler = new SocketHandler();
+        socketManager = new SocketManager();
     }
 
     public void run() {
         launchUnity.run();
-        socketHandler.run(); 
+        socketManager.run(); 
     }
 }

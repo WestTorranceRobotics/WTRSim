@@ -12,52 +12,64 @@ import java.net.InetAddress;
  * has launched and is sending/receiving packets.
 */
 public class UnityVerifier implements Runnable {
-    
+
     int verifTimeOutMili = 100000;
     int sendPort;
     DatagramSocket sendSocket;
     DatagramSocket receiveSocket;
-    SocketHandler socketHandler;
+    SocketManager socketHandler;
 
     public boolean kill = false;
 
     /**
      * UnityVerifier verifies that Unity has launched properly.
      *
-     * @param socketHandler is the class responsible 
-     *      for standard communication. 
+     * @param sendSocket Socket for sending datagrams.
+     * @param receiveSocket Socket for receiving datagrams.
+     * @param sendPort Port used for sending datagrams.
      */
-    UnityVerifier(SocketHandler socketHandler) {
-        this.socketHandler = socketHandler;
-        this.sendSocket = socketHandler.sendSocket;
-        this.receiveSocket = socketHandler.receiveSocket;
-        this.sendPort = socketHandler.sendPort;
+    UnityVerifier(DatagramSocket sendSocket, DatagramSocket receiveSocket, int sendPort) {
+        this.sendSocket = sendSocket;
+        this.receiveSocket = receiveSocket;
+        this.sendPort = sendPort;
     }
 
     @Override
     public void run() {
         try {
-            System.out.println("Verifying Unity Launch... ");
             InetAddress address = InetAddress.getLoopbackAddress();
-            byte[] buffer = new byte[1];
+            System.out.print("Waiting for response from Unity... ");
+            receiveSocket.setSoTimeout(verifTimeOutMili);
+
+            //Wait for Unity to assert it's existence
+            DatagramPacket inboundDp;
+            byte[] buffer = new byte[256];
+            inboundDp = new DatagramPacket(buffer, buffer.length);
+            receiveSocket.receive(inboundDp);
+
+            System.out.println("Received! ");
+            System.out.println("\nPacket: " + new String(inboundDp.getData()));
+            System.out.print("Prompting Unity to enter playmode and awaiting confirmation... ");
+
+            //Prompt for Unity to enter playmode
+            buffer = new byte[256];
+            buffer = "".getBytes();
             DatagramPacket outboundDp = new DatagramPacket(
                 buffer, buffer.length, 
                 address, sendPort
             );
-
-            System.out.print("Sending Request... ");
             sendSocket.send(outboundDp);
-            System.out.println("Sent! ");
 
-            System.out.print("Receiving Response... ");
-            receiveSocket.setSoTimeout(verifTimeOutMili);
-            DatagramPacket inboundDp;
-            buffer = new byte[1];
+            //Wait for Unity to assert that it is in playmode
+            buffer = new byte[256];
             inboundDp = new DatagramPacket(buffer, buffer.length);
             receiveSocket.receive(inboundDp);
+
             System.out.println("Received! ");
+            System.out.println("\nPacket: " + new String(inboundDp.getData()));
 
             System.out.println("Handshake Success!");
+
         } catch(IOException e) {
             e.printStackTrace();
             System.out.println("\nFailed. Aborting... \n");

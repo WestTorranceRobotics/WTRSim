@@ -24,13 +24,12 @@ public class SocketHandler: MonoBehaviour
 {
     int clientPort = 4513;
     int serverPort = 4512;
-    
-    public string outboundString = "hello Java";
-    public string received;
 
     Socket sendSocket;
     UdpClient receiveSocket;
     IPEndPoint clientEP;
+    IPAddress serverIPAddress;
+    IPEndPoint serverEP;
 
     Boolean dependentMode; //If dependentMode is true, Unity is running dependently to WTRSimlib
     volatile Boolean kill = false;
@@ -41,57 +40,71 @@ public class SocketHandler: MonoBehaviour
     int heartBeat = 0;
     Boolean heartStopped = false;
 
+    private volatile String outboundString = "";
+    private volatile String inboundString = "";
+
     SocketHandler()
     {
        
         sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         receiveSocket = new UdpClient(clientPort);
         clientEP = new IPEndPoint(IPAddress.Any, clientPort);
-
-        sendSocket.SendTimeout = 9000;
-        receiveSocket.Client.ReceiveTimeout = 9000;
+        sendSocket.SendTimeout = 10000;
+        receiveSocket.Client.ReceiveTimeout = 10000;
 
         try
         {
-            IPAddress serverIPAddress = IPAddress.Parse("127.0.0.1");
-            IPEndPoint serverEP = new IPEndPoint(serverIPAddress, serverPort);
-            byte[] message = new byte[1];
-            sendSocket.SendTo(message, serverEP);
+            serverIPAddress = IPAddress.Parse("127.0.0.1");
+            serverEP = new IPEndPoint(serverIPAddress, serverPort);
 
+            //Tell java that Unity has launched
+            byte[] buffer = new byte[256];
+            buffer = Encoding.ASCII.GetBytes("");
+            sendSocket.SendTo(buffer, serverEP);
+
+            //Verify that Java knows Unity is alive
             lastHeartBeat = heartBeat;
-            receiveSocket.Receive(ref clientEP);
-            heartBeat++;
+            byte[] inboundBytes = receiveSocket.Receive(ref clientEP);
+            setInboundString(Encoding.ASCII.GetString(inboundBytes, 0, inboundBytes.Length));
+            //heartBeat++;
 
-            Debug.Log("Connected!");
+            Debug.Log(inboundString);
+
+            Debug.Log("Handshake Success!");
             dependentMode = true;
 			EditorApplication.playModeStateChanged += playModeChanged;
         }
         catch ( SocketException e )
         {
+            Debug.Log("Running Independent to RobotCode");
             dependentMode = false;
-			kill = true;
         }
 		
-        EditorApplication.update += Update;
+       EditorApplication.update += Update;
     }
-	
-	private void playModeChanged(PlayModeStateChange state) {
-		
-		if (EditorApplication.isPlaying) {
-			kill = false;
-	    //Inbound
+
+    private void playModeChanged(PlayModeStateChange state)
+    {
+        //Tell java that playmode has been reached
+        byte[] buffer = new byte[ 256 ];
+        buffer = Encoding.ASCII.GetBytes("");
+        sendSocket.SendTo(buffer, serverEP);
+
+        if(dependentMode)
+        {
+            //Inbound
             new Thread(() =>
             {
                 while ( !kill )
                 {
-                    Thread.Sleep(10);
+                    Thread.Sleep(5);
                     try
                     {
                         lastHeartBeat = heartBeat;
                         byte[] inboundBytes = receiveSocket.Receive(ref clientEP);
-                        received = Encoding.ASCII.GetString(inboundBytes, 0, inboundBytes.Length);
+                        setInboundString(Encoding.ASCII.GetString(inboundBytes, 0, inboundBytes.Length));
                         heartBeat++;
-                        Debug.Log("packet received: " + received);
+                        Debug.Log("packet received: " + inboundString);
                     }
                     catch ( SocketException e )
                     {
@@ -112,11 +125,9 @@ public class SocketHandler: MonoBehaviour
             {
                 while ( !kill )
                 {
-                    Thread.Sleep(10);
+                    Thread.Sleep(30);
                     try
                     {
-                        IPAddress serverIPAddress = IPAddress.Parse("127.0.0.1");
-                        IPEndPoint serverEP = new IPEndPoint(serverIPAddress, serverPort);
                         byte[] message = Encoding.ASCII.GetBytes(outboundString);
                         sendSocket.SendTo(message, serverEP);
                     }
@@ -127,41 +138,61 @@ public class SocketHandler: MonoBehaviour
 
                 }
             }).Start();
-		}
-		else {
-			kill = true;
-		}
-
-	}
+        }
+    }
 
     private void Update()
     {
-		if (!initialized && dependentMode) {
-			EditorApplication.EnterPlaymode();
-			initialized = true;
-		}
-		
+        if ( !initialized && dependentMode )
+        {
+            EditorApplication.EnterPlaymode();
+            initialized = true;
+        }
+
+        if ( dependentMode && !EditorApplication.isPlaying )
+        {
+            receiveSocket.Close();
+            sendSocket.Close();
+        }
+
         if ( kill )
         {
             killProcesses();
         }
     }
 
-    void OnApplicationQuit() {
+    void OnApplicationQuit()
+    {
         killProcesses();
     }
 
-    void killProcesses() {
+    void killProcesses()
+    {
         AppDomain.CurrentDomain.ProcessExit += (obj, eArg) =>
         {
             kill = true;
         };
 
-        //EditorApplication.Exit(0);
         receiveSocket.Close();
         sendSocket.Close();
-        //EditorApplication.Exit(0);
+        EditorApplication.Exit(0);
     }
+
+    public void setInboundString(String inbString)
+    {
+        lock(inboundString) {
+            inboundString = inbString;
+        }
+    }
+
+    public void setOutboundString(String obString)
+    {
+        lock ( outboundString )
+        {
+            outboundString = obString;
+        }
+    }
+    
 }
 
 
