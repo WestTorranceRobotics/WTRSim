@@ -5,7 +5,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.concurrent.atomic.AtomicLong;
 import simulation.launch.UnityVerifier;
+import simulation.serialization.ByteAssembler;
+import simulation.serialization.DatagramAssembler;
 
 // Credit to the University of Northampton, UK
 // http://www.eng.northampton.ac.uk/~espen/CSY2026/JavaServerCSClient.htm
@@ -17,6 +20,7 @@ import simulation.launch.UnityVerifier;
 public class SocketManager implements Runnable  {
 
     Runnable unityVerifier;
+    ByteAssembler datagramAssembler;
 
     int soTimeout = 2000;
 
@@ -29,14 +33,16 @@ public class SocketManager implements Runnable  {
 
     public volatile String outboundString = "";
     public volatile String inboundString = "";
+    public volatile AtomicLong sent;
+    public volatile AtomicLong received;
+    public volatile Object[] objects;
 
     volatile boolean kill = false;
 
-    int lastHeartBeat = -1;
-    int heartBeat = 0;
-    Boolean heartStopped = false;
-
-    public SocketManager(){
+    /**
+     * Constructor for SocketManager.
+     */
+    public SocketManager() {
         address = InetAddress.getLoopbackAddress();
 
         try {
@@ -54,8 +60,13 @@ public class SocketManager implements Runnable  {
         }
 
         unityVerifier = new UnityVerifier(sendSocket, receiveSocket, sendPort);
+        datagramAssembler = new DatagramAssembler();
+        
+        sent = new AtomicLong();
+        received = new AtomicLong();
     }
 
+    @Override
     public void run() {
         unityVerifier.run();  
   
@@ -73,22 +84,23 @@ public class SocketManager implements Runnable  {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                try {
-                    byte[] buffer = new byte[256];
-                    buffer = outboundString.getBytes();
-                    DatagramPacket outboundDp = 
-                        new DatagramPacket(
-                        buffer, 
-                        buffer.length, 
-                        address, 
-                        sendPort
-                    );
-    
-                    sendSocket.send(outboundDp);
 
+                byte[] outboundBytes = datagramAssembler.getBytes(objects, sent.addAndGet(0), 
+                    received.addAndGet(0)
+                );
+                    
+                try {
+                    DatagramPacket outboundDp = new DatagramPacket(outboundBytes, 
+                        outboundBytes.length, address, sendPort
+                    );
+
+                    sendSocket.send(outboundDp);
+                    sent.addAndGet(1);
                 } catch (IOException e) {
-                    e.printStackTrace();
+            
                 }
+
+                System.out.println(sent.addAndGet(0) + "    " + received.addAndGet(0));
             }
         }).start();
 
@@ -108,39 +120,16 @@ public class SocketManager implements Runnable  {
                 }
 
                 try {
-                    lastHeartBeat = heartBeat;
                     DatagramPacket inboundDp;
                     byte[] buffer = new byte[256];
                     inboundDp = new DatagramPacket(buffer, buffer.length);
                     receiveSocket.receive(inboundDp);
-                    setInboundString(new String(inboundDp.getData()));
-                    heartBeat++;
-                    System.out.println("packet received: " + 
-                        inboundString);
+                    received.addAndGet(1);
                 } catch(IOException e) {
-                    e.printStackTrace();
-                    if ( heartStopped )
-                        {
-                            System.out.println("Timed out. Aborting... ");
-                            kill = true;
-                        }
+                    System.out.println("Timed out. Aborting... ");
+                    kill = true; 
                 }
-
-                heartBeat = (heartBeat >= 1000000) ? 0 : heartBeat;
-                heartStopped = (heartBeat == lastHeartBeat) ? true : heartStopped;
             }
         }).start();      
-    }
-
-    public synchronized void setInboundString(String string) {
-        synchronized (inboundString) {
-            inboundString = string;
-        }
-    }
-
-    public synchronized void setOutboundString(String string) {
-        synchronized (outboundString) {
-            outboundString = string;
-        }
     }
 }

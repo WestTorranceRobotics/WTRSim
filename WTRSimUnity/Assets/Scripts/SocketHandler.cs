@@ -36,13 +36,6 @@ public class SocketHandler: MonoBehaviour
 	
 	Boolean initialized = false;
 
-    int lastHeartBeat = -1;
-    int heartBeat = 0;
-    Boolean heartStopped = false;
-
-    private volatile String outboundString = "";
-    private volatile String inboundString = "";
-
     SocketHandler()
     {
        
@@ -63,12 +56,7 @@ public class SocketHandler: MonoBehaviour
             sendSocket.SendTo(buffer, serverEP);
 
             //Verify that Java knows Unity is alive
-            lastHeartBeat = heartBeat;
             byte[] inboundBytes = receiveSocket.Receive(ref clientEP);
-            setInboundString(Encoding.ASCII.GetString(inboundBytes, 0, inboundBytes.Length));
-            //heartBeat++;
-
-            Debug.Log(inboundString);
 
             Debug.Log("Handshake Success!");
             dependentMode = true;
@@ -100,23 +88,14 @@ public class SocketHandler: MonoBehaviour
                     Thread.Sleep(5);
                     try
                     {
-                        lastHeartBeat = heartBeat;
                         byte[] inboundBytes = receiveSocket.Receive(ref clientEP);
-                        setInboundString(Encoding.ASCII.GetString(inboundBytes, 0, inboundBytes.Length));
-                        heartBeat++;
-                        Debug.Log("packet received: " + inboundString);
+                        Debug.Log("packet received");
                     }
                     catch ( SocketException e )
                     {
-                        Debug.LogError(e.Message + " " + e.StackTrace);
-                        if ( heartStopped )
-                        {
-                            kill = true;
-                        }
+                        Debug.Log("Timed Out. Aborting...");
+                        kill = true;
                     }
-
-                    heartBeat = (heartBeat >= 1000000) ? 0 : heartBeat;
-                    heartStopped = (heartBeat == lastHeartBeat) ? true : heartStopped;
                 }
             }).Start();
 
@@ -128,14 +107,13 @@ public class SocketHandler: MonoBehaviour
                     Thread.Sleep(30);
                     try
                     {
-                        byte[] message = Encoding.ASCII.GetBytes(outboundString);
+                        byte[] message = Encoding.ASCII.GetBytes("");
                         sendSocket.SendTo(message, serverEP);
                     }
                     catch ( SocketException e )
                     {
                         Debug.LogError(e.Message + " " + e.StackTrace);
                     }
-
                 }
             }).Start();
         }
@@ -177,22 +155,6 @@ public class SocketHandler: MonoBehaviour
         sendSocket.Close();
         EditorApplication.Exit(0);
     }
-
-    public void setInboundString(String inbString)
-    {
-        lock(inboundString) {
-            inboundString = inbString;
-        }
-    }
-
-    public void setOutboundString(String obString)
-    {
-        lock ( outboundString )
-        {
-            outboundString = obString;
-        }
-    }
-    
 }
 
 
