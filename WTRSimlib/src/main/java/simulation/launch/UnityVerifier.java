@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import simulation.serialization.SocketManager;
 
 /**
  * UnityVerifier is responsible for verifying 
@@ -17,7 +18,6 @@ public class UnityVerifier implements Runnable {
     int sendPort;
     DatagramSocket sendSocket;
     DatagramSocket receiveSocket;
-    SocketManager socketHandler;
 
     public boolean kill = false;
 
@@ -28,7 +28,7 @@ public class UnityVerifier implements Runnable {
      * @param receiveSocket Socket for receiving datagrams.
      * @param sendPort Port used for sending datagrams.
      */
-    UnityVerifier(DatagramSocket sendSocket, DatagramSocket receiveSocket, int sendPort) {
+    public UnityVerifier(DatagramSocket sendSocket, DatagramSocket receiveSocket, int sendPort) {
         this.sendSocket = sendSocket;
         this.receiveSocket = receiveSocket;
         this.sendPort = sendPort;
@@ -37,7 +37,7 @@ public class UnityVerifier implements Runnable {
     @Override
     public void run() {
         try {
-            InetAddress address = InetAddress.getLoopbackAddress();
+            final InetAddress address = InetAddress.getLoopbackAddress();
             System.out.print("Waiting for response from Unity... ");
             receiveSocket.setSoTimeout(verifTimeOutMili);
 
@@ -73,7 +73,6 @@ public class UnityVerifier implements Runnable {
         } catch(IOException e) {
             e.printStackTrace();
             System.out.println("\nFailed. Aborting... \n");
-            socketHandler.kill = true;
         }
     }
 }

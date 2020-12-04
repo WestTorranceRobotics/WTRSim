@@ -1,6 +1,7 @@
 package simulation.launch;
 
 import java.io.File;
+import simulation.serialization.SocketManager;
 
 /**
  * Run SimInit as a thread to launch and intialize simulator.

@@ -1,4 +1,4 @@
-package simulation.launch;
+package simulation.serialization;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -37,7 +37,7 @@ public class SocketManager implements Runnable  {
     public volatile AtomicLong received;
     public volatile Object[] objects;
 
-    volatile boolean kill = false;
+    public volatile boolean kill = false;
 
     /**
      * Constructor for SocketManager.
@@ -100,7 +100,8 @@ public class SocketManager implements Runnable  {
             
                 }
 
-                System.out.println(sent.addAndGet(0) + "    " + received.addAndGet(0));
+                System.out.println("sent " + sent.addAndGet(0) + " received " + 
+                    received.addAndGet(0));
             }
         }).start();
 

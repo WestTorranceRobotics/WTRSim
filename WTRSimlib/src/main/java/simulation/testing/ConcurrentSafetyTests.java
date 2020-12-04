@@ -13,7 +13,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
-import simulation.launch.*;
+import simulation.*;
+import simulation.serialization.SocketManager;
 
 /**
  * Todo
@@ -36,7 +37,7 @@ public class ConcurrentSafetyTests {
         }
         return randomString.toString();
     }
-     
+
     /**
      * Method from junit-4 documentation
      */

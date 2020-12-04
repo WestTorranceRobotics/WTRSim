@@ -9,6 +9,8 @@ using UnityEngine.Assertions;
 using System.Threading;
 using System.Linq;
 using System.Text;
+using System.Security.Cryptography;
+using Object = System.Object;
 
 //Singleton needed on game object
 
@@ -20,8 +22,10 @@ using System.Text;
  * Class that handles communication with Java
  */
 [InitializeOnLoad]
-public class SocketHandler: MonoBehaviour
+public class SocketManager: MonoBehaviour
 {
+    ByteAssembler datagramAssembler;
+
     int clientPort = 4513;
     int serverPort = 4512;
 
@@ -30,15 +34,18 @@ public class SocketHandler: MonoBehaviour
     IPEndPoint clientEP;
     IPAddress serverIPAddress;
     IPEndPoint serverEP;
+    long sent;
+    long received;
+    Object[] objs;
 
     Boolean dependentMode; //If dependentMode is true, Unity is running dependently to WTRSimlib
     volatile Boolean kill = false;
-	
-	Boolean initialized = false;
 
-    SocketHandler()
+    Boolean initialized = false;
+
+    SocketManager()
     {
-       
+        datagramAssembler = new DatagramAssembler();
         sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         receiveSocket = new UdpClient(clientPort);
         clientEP = new IPEndPoint(IPAddress.Any, clientPort);
@@ -51,7 +58,7 @@ public class SocketHandler: MonoBehaviour
             serverEP = new IPEndPoint(serverIPAddress, serverPort);
 
             //Tell java that Unity has launched
-            byte[] buffer = new byte[256];
+            byte[] buffer = new byte[ 256 ];
             buffer = Encoding.ASCII.GetBytes("");
             sendSocket.SendTo(buffer, serverEP);
 
@@ -60,44 +67,46 @@ public class SocketHandler: MonoBehaviour
 
             Debug.Log("Handshake Success!");
             dependentMode = true;
-			EditorApplication.playModeStateChanged += playModeChanged;
+            EditorApplication.playModeStateChanged += PlayModeChanged;
         }
         catch ( SocketException e )
         {
             Debug.Log("Running Independent to RobotCode");
             dependentMode = false;
         }
-		
-       EditorApplication.update += Update;
+
+        EditorApplication.update += Update;
     }
 
-    private void playModeChanged(PlayModeStateChange state)
+    private void PlayModeChanged(PlayModeStateChange state)
     {
-        //Tell java that playmode has been reached
-        byte[] buffer = new byte[ 256 ];
-        buffer = Encoding.ASCII.GetBytes("");
-        sendSocket.SendTo(buffer, serverEP);
-
-        if(dependentMode)
+        if ( dependentMode && state.Equals(PlayModeStateChange.EnteredPlayMode) )
         {
+
+            //Tell java that playmode has been reached
+            byte[] buffer = new byte[ 256 ];
+            buffer = Encoding.ASCII.GetBytes("");
+            sendSocket.SendTo(buffer, serverEP);
+
             //Inbound
             new Thread(() =>
-            {
-                while ( !kill )
                 {
-                    Thread.Sleep(5);
-                    try
+                    while ( !kill )
                     {
-                        byte[] inboundBytes = receiveSocket.Receive(ref clientEP);
-                        Debug.Log("packet received");
+                        Thread.Sleep(5);
+                        try
+                        {
+                            byte[] inboundBytes = receiveSocket.Receive(ref clientEP);
+                            Interlocked.Increment(ref received);
+                            Debug.Log("packet received");
+                        }
+                        catch ( SocketException e )
+                        {
+                            Debug.Log("Timed Out. Aborting...");
+                            kill = true;
+                        }
                     }
-                    catch ( SocketException e )
-                    {
-                        Debug.Log("Timed Out. Aborting...");
-                        kill = true;
-                    }
-                }
-            }).Start();
+                }).Start();
 
             //Outbound
             new Thread(() =>
@@ -107,8 +116,9 @@ public class SocketHandler: MonoBehaviour
                     Thread.Sleep(30);
                     try
                     {
-                        byte[] message = Encoding.ASCII.GetBytes("");
-                        sendSocket.SendTo(message, serverEP);
+                        byte[] outboundBytes = datagramAssembler.getBytes(objs, Interlocked.Read(ref sent), Interlocked.Read(ref received));
+                        sendSocket.SendTo(outboundBytes, serverEP);
+                        Interlocked.Increment(ref sent);
                     }
                     catch ( SocketException e )
                     {
@@ -116,6 +126,14 @@ public class SocketHandler: MonoBehaviour
                     }
                 }
             }).Start();
+
+            EditorApplication.playModeStateChanged += KillLeavingPlaymode;
+        }
+    }
+
+    void KillLeavingPlaymode(PlayModeStateChange state) {
+        if (state.Equals(PlayModeStateChange.ExitingPlayMode)) {
+            killProcesses();
         }
     }
 
@@ -125,36 +143,26 @@ public class SocketHandler: MonoBehaviour
         {
             EditorApplication.EnterPlaymode();
             initialized = true;
-        }
 
-        if ( dependentMode && !EditorApplication.isPlaying )
+
+            if ( kill )
+            {
+                killProcesses();
+            }
+        }
+    }
+
+        void killProcesses()
         {
+            AppDomain.CurrentDomain.ProcessExit += (obj, eArg) =>
+            {
+                kill = true;
+            };
+
             receiveSocket.Close();
             sendSocket.Close();
-        }
-
-        if ( kill )
-        {
-            killProcesses();
+            EditorApplication.Exit(0);
         }
     }
-
-    void OnApplicationQuit()
-    {
-        killProcesses();
-    }
-
-    void killProcesses()
-    {
-        AppDomain.CurrentDomain.ProcessExit += (obj, eArg) =>
-        {
-            kill = true;
-        };
-
-        receiveSocket.Close();
-        sendSocket.Close();
-        EditorApplication.Exit(0);
-    }
-}
 
 
