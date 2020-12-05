@@ -24,7 +24,8 @@ using Object = System.Object;
 [InitializeOnLoad]
 public class SocketManager: MonoBehaviour
 {
-    ByteAssembler datagramAssembler;
+    ByteAssembler pAssembler;
+    ByteDisassembler pDisassembler;
 
     int clientPort = 4513;
     int serverPort = 4512;
@@ -45,7 +46,8 @@ public class SocketManager: MonoBehaviour
 
     SocketManager()
     {
-        datagramAssembler = new DatagramAssembler();
+        pAssembler = new PacketAssembler();
+        pDisassembler = new PacketDisassembler();
         sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         receiveSocket = new UdpClient(clientPort);
         clientEP = new IPEndPoint(IPAddress.Any, clientPort);
@@ -116,7 +118,7 @@ public class SocketManager: MonoBehaviour
                     Thread.Sleep(30);
                     try
                     {
-                        byte[] outboundBytes = datagramAssembler.getBytes(objs, Interlocked.Read(ref sent), Interlocked.Read(ref received));
+                        byte[] outboundBytes = pAssembler.getBytes(objs, Interlocked.Read(ref sent), Interlocked.Read(ref received));
                         sendSocket.SendTo(outboundBytes, serverEP);
                         Interlocked.Increment(ref sent);
                     }

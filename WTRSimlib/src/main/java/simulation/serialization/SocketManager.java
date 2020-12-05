@@ -8,7 +8,7 @@ import java.net.SocketException;
 import java.util.concurrent.atomic.AtomicLong;
 import simulation.launch.UnityVerifier;
 import simulation.serialization.ByteAssembler;
-import simulation.serialization.DatagramAssembler;
+import simulation.serialization.PacketAssembler;
 
 // Credit to the University of Northampton, UK
 // http://www.eng.northampton.ac.uk/~espen/CSY2026/JavaServerCSClient.htm
@@ -20,24 +20,23 @@ import simulation.serialization.DatagramAssembler;
 public class SocketManager implements Runnable  {
 
     Runnable unityVerifier;
-    ByteAssembler datagramAssembler;
+    ByteAssembler pAssembler;
+    ByteDisassembler pDisassembler;
 
     int soTimeout = 2000;
 
-    public int sendPort = 4513;
-    public int receivePort = 4512;
+    public int sendPort = 4513; //Port we are sending to.
+    public int receivePort = 4512; //Port we are receiving from.
 
     public DatagramSocket receiveSocket;
     public DatagramSocket sendSocket;
     InetAddress address;
 
-    public volatile String outboundString = "";
-    public volatile String inboundString = "";
-    public volatile AtomicLong sent;
-    public volatile AtomicLong received;
-    public volatile Object[] objects;
+    public volatile AtomicLong sent; //Java packets sent.
+    public volatile AtomicLong received; //Java packets received.
+    public volatile Object[] objects; //Array of simulated hardware objects.
 
-    public volatile boolean kill = false;
+    private volatile boolean kill = false;
 
     /**
      * Constructor for SocketManager.
@@ -60,7 +59,8 @@ public class SocketManager implements Runnable  {
         }
 
         unityVerifier = new UnityVerifier(sendSocket, receiveSocket, sendPort);
-        datagramAssembler = new DatagramAssembler();
+        pAssembler = new PacketAssembler();
+        pDisassembler = new PacketDisassembler();
         
         sent = new AtomicLong();
         received = new AtomicLong();
@@ -84,16 +84,19 @@ public class SocketManager implements Runnable  {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
-                byte[] outboundBytes = datagramAssembler.getBytes(objects, sent.addAndGet(0), 
-                    received.addAndGet(0)
-                );
                     
                 try {
+                    //OutboundBytes retreived.
+                    byte[] outboundBytes = pAssembler.getBytes(objects, sent.addAndGet(0), 
+                    received.addAndGet(0)
+                    );
+
+                    //Datagram assembled with outboundBytes.
                     DatagramPacket outboundDp = new DatagramPacket(outboundBytes, 
                         outboundBytes.length, address, sendPort
                     );
 
+                    //Send the packet.
                     sendSocket.send(outboundDp);
                     sent.addAndGet(1);
                 } catch (IOException e) {
@@ -132,5 +135,9 @@ public class SocketManager implements Runnable  {
                 }
             }
         }).start();      
+    }
+
+    public synchronized void kill() {
+        kill = true;
     }
 }

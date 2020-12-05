@@ -6,14 +6,14 @@ using UnityEngine;
 using Newtonsoft.Json;
 using System;
 
-public class DatagramAssembler: ByteAssembler
+public class PacketAssembler: ByteAssembler
 {
     private string id = "WTRU";
     private byte[] preData; //Contains metadata length and sender id.
     private byte[] metaDataBytes; //Contains metadata.
     private byte[] bodyData; //Contains body data.
 
-    public DatagramAssembler()
+    public PacketAssembler()
     {
     }
 
@@ -54,7 +54,6 @@ public class DatagramAssembler: ByteAssembler
             sent = packetsSent;
             received = packetsReceived;
             sysTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            Debug.Log(sent);
         }
     }
 
