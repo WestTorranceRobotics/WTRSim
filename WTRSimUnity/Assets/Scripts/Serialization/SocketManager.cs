@@ -41,6 +41,7 @@ public class SocketManager: MonoBehaviour
 
     Boolean dependentMode; //If dependentMode is true, Unity is running dependently to WTRSimlib
     volatile Boolean kill = false;
+    volatile Boolean connect = false;
 
     Boolean initialized = false;
 
@@ -85,49 +86,59 @@ public class SocketManager: MonoBehaviour
         if ( dependentMode && state.Equals(PlayModeStateChange.EnteredPlayMode) )
         {
 
-            //Tell java that playmode has been reached
-            byte[] buffer = new byte[ 256 ];
-            buffer = Encoding.ASCII.GetBytes("");
-            sendSocket.SendTo(buffer, serverEP);
-
             //Inbound
-            new Thread(() =>
+            Thread inbound = new Thread(() =>
                 {
-                    while ( !kill )
+                    while (connect)
                     {
-                        Thread.Sleep(5);
-                        try
+                        while (!kill)
                         {
-                            byte[] inboundBytes = receiveSocket.Receive(ref clientEP);
-                            Interlocked.Increment(ref received);
-                            Debug.Log("packet received");
-                        }
-                        catch ( SocketException e )
-                        {
-                            Debug.Log("Timed Out. Aborting...");
-                            kill = true;
+                            Thread.Sleep(5);
+                            try
+                            {
+                                byte[] inboundBytes = receiveSocket.Receive(ref clientEP);
+                                Interlocked.Increment(ref received);
+                                Debug.Log("packet received");
+                            }
+                            catch (SocketException e)
+                            {
+                                Debug.Log("Timed Out. Aborting...");
+                                kill = true;
+                            }
                         }
                     }
-                }).Start();
+                });
 
             //Outbound
-            new Thread(() =>
+            Thread outbound = new Thread(() =>
             {
-                while ( !kill )
+                while (connect)
                 {
-                    Thread.Sleep(30);
-                    try
+                    while (!kill)
                     {
-                        byte[] outboundBytes = pAssembler.getBytes(objs, Interlocked.Read(ref sent), Interlocked.Read(ref received));
-                        sendSocket.SendTo(outboundBytes, serverEP);
-                        Interlocked.Increment(ref sent);
-                    }
-                    catch ( SocketException e )
-                    {
-                        Debug.LogError(e.Message + " " + e.StackTrace);
+                        Thread.Sleep(30);
+                        try
+                        {
+                            byte[] outboundBytes = pAssembler.getBytes(objs, Interlocked.Read(ref sent), Interlocked.Read(ref received));
+                            sendSocket.SendTo(outboundBytes, serverEP);
+                            Interlocked.Increment(ref sent);
+                        }
+                        catch (SocketException e)
+                        {
+                            Debug.LogError(e.Message + " " + e.StackTrace);
+                        }
                     }
                 }
-            }).Start();
+            });
+
+            inbound.Start();
+            outbound.Start();
+
+            //Tell java that playmode has been reached
+            byte[] buffer = new byte[256];
+            buffer = Encoding.ASCII.GetBytes("");
+            sendSocket.SendTo(buffer, serverEP);
+            connect = true;
 
             EditorApplication.playModeStateChanged += KillLeavingPlaymode;
         }

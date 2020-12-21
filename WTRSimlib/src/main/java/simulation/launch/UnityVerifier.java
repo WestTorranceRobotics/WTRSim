@@ -70,6 +70,7 @@ public class UnityVerifier implements Runnable {
             System.out.println("Handshake Success!");
 
         } catch(IOException e) {
+            System.out.println("hi");
             e.printStackTrace();
             System.out.println("\nFailed. Aborting... \n");
         }
